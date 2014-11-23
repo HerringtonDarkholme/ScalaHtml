@@ -4,6 +4,8 @@ import scala.collection.mutable.TreeSet
 import scala.collection.mutable.HashMap
 import scala.reflect.ClassTag
 
+object HTML {
+
 abstract class Attr[V](val name: String) {
   var value: V = _
   def :=(v: V) = {
@@ -31,6 +33,13 @@ trait Tag extends Dynamic {
     for (attr <- attrs) this.attrs += attr.toString
     this
   }
+
+  def ::[P[A <: this.type] <: NestTag[A]](parentTag: P[_]) = {
+    // compensation for the absence of right to left inference
+    val castedParent = parentTag.asInstanceOf[P[this.type]]
+    castedParent | this
+    castedParent
+  }
 }
 
 abstract class NestTag[A <: Tag](val name: String) extends Tag {
@@ -41,11 +50,6 @@ abstract class NestTag[A <: Tag](val name: String) extends Tag {
     child = t
     this
   }
-
-  // def applyDynamic(clz: String)(t: A): this.type = {
-  //   selectDynamic(clz)
-  //   this(t)
-  // }
 
   private def printChild: String = {
     if (child == null) return ""
@@ -146,26 +150,28 @@ trait LowPriorityImplicit {
 }
 
 object Test extends LowPriorityImplicit {
-  implicit def recurEq[
-    A <: Tag,
-    B[_ <: Tag] <: NestTag[_],
-    C[_ <: Tag] <: NestTag[_],
-    T[_ <: Tag] <: NestTag[_]]
-  (implicit ev: Contains[A, B, T]) = new Contains[B[A], C, T] {
-    type D = ev.D
-    def extract(k: C[B[A]]): T[D] = ev.extract(k.child.asInstanceOf[B[A]])
-  }
+implicit def recurEq[
+  A <: Tag,
+  B[_ <: Tag] <: NestTag[_],
+  C[_ <: Tag] <: NestTag[_],
+  T[_ <: Tag] <: NestTag[_]]
+(implicit ev: Contains[A, B, T]) = new Contains[B[A], C, T] {
+  type D = ev.D
+  def extract(k: C[B[A]]): T[D] = ev.extract(k.child.asInstanceOf[B[A]])
+}
 
-  val k =
-    div.test.heheh | (
-      p.testCls(id:="heh") | (
-        div.child | (
-          p.whathaha | a()
-    )))
+val k =
+  div.test.heheh |(
+    p.testCls(id:="heh") | (
+      div.child | (
+        p.whathaha | a()
+  )))
 
 type Compound[B <: Tag] = Div[P[B]]
 val div_p = jQ(k).has[Compound]
 val pele = jQ(k).has[P]
 println(div_p)
 println(p)
+}
+
 }
