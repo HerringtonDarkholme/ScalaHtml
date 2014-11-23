@@ -96,8 +96,8 @@ object id extends Attr[String]("id")
 object width extends Attr[Int]("width")
 object action extends Attr[String]("action")
 object tpe extends Attr[String]("type")
-implicit def attrifyPair(p: (String, String)): Attr[String] =
-  new Attr[String](p._1){} := p._2
+implicit def attrifyPair(p: String): Attr[String] =
+  new Attr[String](p){}
 
 trait Inline extends Tag
 trait Block extends Tag
@@ -163,7 +163,7 @@ implicit def recurEq[
 val k =
   div.test.heheh |(
     p.testCls(id:="heh") | (
-      div.child | (
+      div.child("data-test":="h") | (
         p.whathaha | a()
   )))
 
